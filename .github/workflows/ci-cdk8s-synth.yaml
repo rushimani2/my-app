@@ -19,37 +19,25 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v4
         with:
-          go-version: 1.23.8
+          go-version: 1.23
 
-      - name: Install Go dependencies
+      - name: Install dependencies (including all relevant Go dependencies)
         run: |
-          # Create a go.mod dynamically
-          echo "module main" > go.mod
-          echo "go 1.23" >> go.mod
-          echo "require github.com/aws/constructs-go/constructs/v10 v10.0.0" >> go.mod
-          echo "require github.com/cdk8s-team/cdk8s-core-go/cdk8s/v2 v2.0.0" >> go.mod  # Stable version for cdk8s-core
-          echo "require github.com/cdk8s-team/cdk8s-plus-go/cdk8splus26/v2 v2.0.0" >> go.mod  # Stable version for cdk8s-plus
-
-          # Install the dependencies
-          go mod tidy
-          go get github.com/cdk8s-team/cdk8s-core-go/cdk8s/v2@v2.0.0
-          go get github.com/cdk8s-team/cdk8s-plus-go/cdk8splus26/v2@v2.0.0
+          # Install all necessary Go dependencies, including indirect ones
           go get github.com/aws/constructs-go/constructs/v10@v10.0.0
+          go get github.com/cdk8s-team/cdk8s-core-go/cdk8s/v2@v2.69.0
+          go get github.com/cdk8s-team/cdk8s-plus-go/cdk8splus26/v2@v2.69.0
+          go get github.com/aws/jsii-runtime-go@v1.53.0
+          go get github.com/cdk8s-team/cdk8s-core-go/cdk8s/v2/pkg/apis/meta/v1
 
       - name: Install CDK8s CLI (for Synthesis)
         run: npm install -g cdk8s-cli
 
-      - name: Synthesize Kubernetes YAML using CDK8s
+      - name: Run the Go application and synthesize Kubernetes YAML
         run: |
           mkdir -p temp-synth-output
-          cdk8s synth --app "go run main.go" --output temp-synth-output
-
-      - name: Copy synthesized files to Helm chart (preserving existing files)
-        run: |
-          for file in temp-synth-output/*.k8s.yaml; do
-            name=$(basename "$file")
-            cp "$file" "helm/go-web-app-chart/templates/synth-${name}"
-          done
+          go run main.go > temp-synth-output/synthesized_output.yaml
+          echo "Synthesis complete!"
 
       - name: Commit synthesized files (if changed)
         env:
@@ -61,3 +49,4 @@ jobs:
           git commit -m "Add/update synthesized Kubernetes YAML using CDK8s" || echo "No changes to commit"
           git pull origin main --rebase
           git push
+
