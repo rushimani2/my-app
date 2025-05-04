@@ -3,7 +3,7 @@ name: Go CDK8s Synthesis Workflow
 on:
   push:
     branches:
-      - main
+      - master
   pull_request:
     branches:
       - main
