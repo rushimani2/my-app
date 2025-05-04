@@ -16,11 +16,12 @@ type MyChartProps struct {
 func NewMyChart(scope constructs.Construct, id string, props *MyChartProps) cdk8s.Chart {
 	chart := cdk8s.NewChart(scope, &id, &props.ChartProps)
 
+	// Define labels for the application
 	appLabels := map[string]*string{
 		"app": cdk8s.String("go-web-app"),
 	}
 
-	// Deployment
+	// Define the Kubernetes Deployment
 	cdk8splus26.NewDeployment(chart, cdk8s.String("go-web-app-deployment"), &cdk8splus26.DeploymentProps{
 		Metadata: &cdk8s.ApiObjectMetadata{
 			Name:   cdk8s.String("go-web-app"),
@@ -35,7 +36,7 @@ func NewMyChart(scope constructs.Construct, id string, props *MyChartProps) cdk8
 		},
 	})
 
-	// Service
+	// Define the Kubernetes Service
 	cdk8splus26.NewService(chart, cdk8s.String("go-web-app-service"), &cdk8splus26.ServiceProps{
 		Metadata: &cdk8s.ApiObjectMetadata{
 			Name: cdk8s.String("go-web-app"),
@@ -50,7 +51,7 @@ func NewMyChart(scope constructs.Construct, id string, props *MyChartProps) cdk8
 		Selector: &appLabels,
 	})
 
-	// Ingress (optional)
+	// Define an optional Ingress (for external access)
 	cdk8splus26.NewIngress(chart, cdk8s.String("go-web-app-ingress"), &cdk8splus26.IngressProps{
 		Metadata: &cdk8s.ApiObjectMetadata{
 			Name: cdk8s.String("go-web-app"),
