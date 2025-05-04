@@ -23,10 +23,15 @@ jobs:
 
       - name: Install Go dependencies
         run: |
-          # Install Go modules if not present
+          # Create a temporary go.mod to resolve dependencies
+          echo "module main" > go.mod
+          echo "go 1.23" >> go.mod
+          echo "require github.com/aws/constructs-go/constructs/v10 v10.0.0" >> go.mod
+          echo "require github.com/cdk8s-team/cdk8s-core-go/cdk8s/v2 v2.69.65" >> go.mod
+          echo "require github.com/cdk8s-team/cdk8s-plus-go/cdk8splus26/v2 v2.69.65" >> go.mod
+
+          # Install the dependencies
           go mod tidy
-          
-          # Install CDK8s dependencies (fixing path issues dynamically)
           go get github.com/cdk8s-team/cdk8s-core-go/cdk8s/v2@latest
           go get github.com/cdk8s-team/cdk8s-plus-go/cdk8splus26/v2@latest
           go get github.com/aws/constructs-go/constructs/v10@latest
