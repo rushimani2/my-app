@@ -1,12 +1,12 @@
-name: CDK8s Synth for Go
+name: Go CDK8s Synthesis Workflow
 
 on:
   push:
     branches:
-      - master
-    paths:
-      - 'main.go'
-      - '.github/workflows/ci-cdk8s-synth.yaml'
+      - main
+  pull_request:
+    branches:
+      - main
 
 jobs:
   synthesize:
@@ -16,47 +16,40 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up Go
+      - name: Set up Go environment
         uses: actions/setup-go@v4
         with:
           go-version: 1.23
 
-      - name: Initialize Go module temporarily
+      - name: Initialize temporary Go module
         run: |
-          # Initialize go.mod file temporarily for dependency management
           echo "module temp" > go.mod
           echo "go 1.23" >> go.mod
-          
-      - name: Install all necessary Go dependencies, including indirect ones
+
+      - name: Install Go dependencies
         run: |
-          # Install all necessary Go dependencies, including indirect ones
           go get github.com/aws/constructs-go/constructs/v10@v10.0.0
           go get github.com/cdk8s-team/cdk8s-core-go/cdk8s/v2@v2.69.0
-          go get github.com/cdk8s-team/cdk8s-plus-go/cdk8splus26/v2@v2.69.0
+          go get github.com/cdk8s-team/cdk8s-plus-go/cdk8splus26/v2@v2.68.0  # Replace with valid version
           go get github.com/aws/jsii-runtime-go@v1.53.0
           go get github.com/cdk8s-team/cdk8s-core-go/cdk8s/v2/pkg/apis/meta/v1
+          go mod tidy
 
-      - name: Install CDK8s CLI (for Synthesis)
+      - name: Install CDK8s CLI
         run: npm install -g cdk8s-cli
 
-      - name: Run the Go application and synthesize Kubernetes YAML
+      - name: Synthesize the Kubernetes YAML
         run: |
           mkdir -p temp-synth-output
           go run main.go > temp-synth-output/synthesized_output.yaml
           echo "Synthesis complete!"
 
-      - name: Commit synthesized files (if changed)
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          git config --global user.email "lingammani2@gmail.com"
-          git config --global user.name "rushimanikantalingam"
-          git add helm/go-web-app-chart/templates/synth-*
-          git commit -m "Add/update synthesized Kubernetes YAML using CDK8s" || echo "No changes to commit"
-          git pull origin main --rebase
-          git push
+      - name: Upload synthesized output
+        uses: actions/upload-artifact@v3
+        with:
+          name: synthesized-output
+          path: temp-synth-output/synthesized_output.yaml
 
       - name: Clean up go.mod file
         run: |
-          # Remove the temporary go.mod file after installation
           rm go.mod
