@@ -19,50 +19,40 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v4
         with:
-          go-version: 1.22.2
+          go-version: 1.23.8
 
-      - name: Set up Node.js (for CDK8s CLI)
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-
-      - name: Install CDK8s CLI globally
+      - name: Install Go dependencies
         run: |
-          npm install -g cdk8s-cli
-
-      - name: Initialize Go module (if needed)
-        run: |
-          if [ ! -f "go.mod" ]; then
-            go mod init github.com/your/module || true
-          fi
-
-      - name: Download Go dependencies
-        run: |
-          go get github.com/cdk8s-team/cdk8s-core-go/cdk8s/v2@latest
-          go get github.com/cdk8s-team/cdk8s-plus-26-go/cdk8splus26/v2@latest
-          go get github.com/aws/constructs-go/constructs/v10@latest
+          # Install Go modules if not present
           go mod tidy
+          
+          # Install CDK8s dependencies (fixing path issues dynamically)
+          go get github.com/cdk8s-team/cdk8s-core-go/cdk8s/v2@latest
+          go get github.com/cdk8s-team/cdk8s-plus-go/cdk8splus26/v2@latest
+          go get github.com/aws/constructs-go/constructs/v10@latest
+
+      - name: Install CDK8s CLI (for Synthesis)
+        run: npm install -g cdk8s-cli
 
       - name: Synthesize Kubernetes YAML using CDK8s
         run: |
           mkdir -p temp-synth-output
           cdk8s synth --app "go run main.go" --output temp-synth-output
 
-      - name: Copy synthesized files to Helm chart directory
+      - name: Copy synthesized files to Helm chart (preserving existing files)
         run: |
-          mkdir -p helm/go-web-app-chart/templates
           for file in temp-synth-output/*.k8s.yaml; do
             name=$(basename "$file")
             cp "$file" "helm/go-web-app-chart/templates/synth-${name}"
           done
 
-      - name: Commit and push if there are changes
+      - name: Commit synthesized files (if changed)
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           git config --global user.email "lingammani2@gmail.com"
           git config --global user.name "rushimanikantalingam"
           git add helm/go-web-app-chart/templates/synth-*
-          git diff --staged --quiet || git commit -m "Update synthesized manifests"
-          git pull origin master --rebase
+          git commit -m "Add/update synthesized Kubernetes YAML using CDK8s" || echo "No changes to commit"
+          git pull origin main --rebase
           git push
