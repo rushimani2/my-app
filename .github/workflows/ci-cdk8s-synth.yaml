@@ -21,7 +21,13 @@ jobs:
         with:
           go-version: 1.23
 
-      - name: Install dependencies (including all relevant Go dependencies)
+      - name: Initialize Go module temporarily
+        run: |
+          # Initialize go.mod file temporarily for dependency management
+          echo "module temp" > go.mod
+          echo "go 1.23" >> go.mod
+          
+      - name: Install all necessary Go dependencies, including indirect ones
         run: |
           # Install all necessary Go dependencies, including indirect ones
           go get github.com/aws/constructs-go/constructs/v10@v10.0.0
@@ -50,3 +56,7 @@ jobs:
           git pull origin main --rebase
           git push
 
+      - name: Clean up go.mod file
+        run: |
+          # Remove the temporary go.mod file after installation
+          rm go.mod
