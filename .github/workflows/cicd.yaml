@@ -1,0 +1,42 @@
+name: CDK8s Synth for Go
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'main.go'
+      - '.github/workflows/ci-cdk8s-synth.yaml'
+
+jobs:
+  synthesize:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: 1.22.2
+
+      - name: Set up Node.js (for CDK8s CLI)
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install CDK8s CLI
+        run: npm install -g cdk8s-cli
+
+      - name: Install dependencies (Go modules)
+        run: go mod tidy
+
+      - name: Synthesize Kubernetes YAML using CDK8s
+        run: |
+          mkdir -p temp-synth-output
+          cdk8s synth --app "go run main.go" --output temp-synth-output
+
+      - name: Copy synthesized files to Helm chart
+        run: |
+          cp temp-synth-output/*.k8s.yaml helm/go-web-app-chart/templates/
