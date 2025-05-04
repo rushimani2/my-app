@@ -1,11 +1,10 @@
 package main
  
 import (
-	"cdk8s"
-	cdk8splus "github.com/cdk8s-team/cdk8s-plus-go/cdk8splus26"
-	constructs "github.com/aws/constructs-go/constructs/v10"
+    "github.com/aws/constructs-go/constructs/v10"
+    "github.com/cdk8s-team/cdk8s-core-go/cdk8s/v2"
+    cdk8splus "github.com/cdk8s-team/cdk8s-plus-go/cdk8splus/v2" // Update here
 )
-
 type MyChartProps struct {
 	cdk8s.ChartProps
 }
