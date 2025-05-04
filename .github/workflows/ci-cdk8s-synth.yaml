@@ -3,7 +3,7 @@ name: CDK8s Synth for Go
 on:
   push:
     branches:
-      - main
+      - master
     paths:
       - 'main.go'
       - '.github/workflows/ci-cdk8s-synth.yaml'
