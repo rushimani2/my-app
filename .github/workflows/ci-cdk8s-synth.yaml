@@ -1,55 +1,31 @@
-name: Go CDK8s Synthesis Workflow
+name: CDK8s Synth
 
 on:
   push:
-    branches:
-      - master
   pull_request:
-    branches:
-      - main
 
 jobs:
-  synthesize:
+  synth:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+    - name: Checkout code
+      uses: actions/checkout@v3
 
-      - name: Set up Go environment
-        uses: actions/setup-go@v4
-        with:
-          go-version: 1.23
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
 
-      - name: Initialize temporary Go module
-        run: |
-          echo "module temp" > go.mod
-          echo "go 1.23" >> go.mod
+    - name: Install CDK8s CLI
+      run: npm install -g cdk8s-cli
 
-      - name: Install Go dependencies
-        run: |
-          go get github.com/aws/constructs-go/constructs/v10@v10.0.0
-          go get github.com/cdk8s-team/cdk8s-core-go/cdk8s/v2@v2.69.0
-          go get github.com/cdk8s-team/cdk8s-plus-go/cdk8splus26/v2@v2.68.0  # Replace with valid version
-          go get github.com/aws/jsii-runtime-go@v1.53.0
-          go get github.com/cdk8s-team/cdk8s-core-go/cdk8s/v2/pkg/apis/meta/v1
-          go mod tidy
+    - name: Run `cdk8s synth`
+      working-directory: .
+      run: cdk8s synth
 
-      - name: Install CDK8s CLI
-        run: npm install -g cdk8s-cli
-
-      - name: Synthesize the Kubernetes YAML
-        run: |
-          mkdir -p temp-synth-output
-          go run main.go > temp-synth-output/synthesized_output.yaml
-          echo "Synthesis complete!"
-
-      - name: Upload synthesized output
-        uses: actions/upload-artifact@v3
-        with:
-          name: synthesized-output
-          path: temp-synth-output/synthesized_output.yaml
-
-      - name: Clean up go.mod file
-        run: |
-          rm go.mod
+    - name: Upload generated manifests
+      uses: actions/upload-artifact@v4
+      with:
+        name: cdk8s-manifests
+        path: dist/
